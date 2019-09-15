@@ -1,14 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Serilog;
 
 namespace AttackSurfaceAnalyzer.Utils
 {
     public class DirectoryWalker
-    {     
+    {
         public static IEnumerable<FileSystemInfo> WalkDirectory(string root)
         {
             // Data structure to hold names of subfolders to be
@@ -24,8 +24,7 @@ namespace AttackSurfaceAnalyzer.Utils
             while (dirs.Count > 0)
             {
                 string currentDir = dirs.Pop();
-                Log.Verbose(currentDir);
-                if (Filter.IsFiltered(Helpers.RuntimeString(), "Scan", "File", "Path", currentDir))
+                if (Filter.IsFiltered(Helpers.GetPlatformString(), "Scan", "File", "Path", currentDir))
                 {
                     continue;
                 }
@@ -46,12 +45,12 @@ namespace AttackSurfaceAnalyzer.Utils
                 // about the systems on which this code will run.
                 catch (UnauthorizedAccessException)
                 {
-                    Log.Debug("Unable to access: {0}",currentDir);
+                    Log.Debug("Unable to access: {0}", currentDir);
                     continue;
                 }
                 catch (System.IO.DirectoryNotFoundException)
                 {
-                    Log.Debug("Directory not found: {0}",currentDir);
+                    Log.Debug("Directory not found: {0}", currentDir);
                     continue;
                 }
                 // @TODO: Improve this catch. 
@@ -101,7 +100,7 @@ namespace AttackSurfaceAnalyzer.Utils
                         Log.Debug(e.Message);
                         continue;
                     }
-                    if (Filter.IsFiltered(Helpers.RuntimeString(), "Scan", "File", "Path", file))
+                    if (Filter.IsFiltered(Helpers.GetPlatformString(), "Scan", "File", "Path", file))
                     {
                         continue;
                     }
@@ -122,25 +121,21 @@ namespace AttackSurfaceAnalyzer.Utils
                         // Future improvement: log it as a symlink in the data
                         if (fileInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
                         {
-                            Log.Verbose("Skipping symlink {0}", str);
                             continue;
                         }
                     }
-                    catch (System.IO.DirectoryNotFoundException e)
+                    catch (System.IO.DirectoryNotFoundException)
                     {
                         // If file was deleted by a separate application
                         //  or thread since the call to TraverseTree()
                         // then just continue.
-                        Log.Debug(e.Message);
-                        Log.Debug(e.GetType().ToString());
-
                         continue;
                     }
                     catch (Exception e)
                     {
-                        Log.Debug(e.Message);
-                        Log.Debug(e.GetType().ToString());
-                        Telemetry.TrackTrace(Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning,e);
+                        Logger.DebugException(e);
+
+                        Telemetry.TrackTrace(Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Warning, e);
                         continue;
                     }
                     dirs.Push(str);

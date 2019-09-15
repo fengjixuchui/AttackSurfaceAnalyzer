@@ -3,6 +3,7 @@
 
 using Serilog;
 using Serilog.Events;
+using System;
 
 namespace AttackSurfaceAnalyzer.Utils
 {
@@ -16,12 +17,24 @@ namespace AttackSurfaceAnalyzer.Utils
 
         public static void Setup(bool debug, bool verbose)
         {
-            if (verbose)
+            Setup(debug, verbose, false);
+        }
+
+        public static void Setup(bool debug, bool verbose, bool quiet)
+        {
+            if (quiet)
+            {
+                Log.Logger = new LoggerConfiguration()
+                    .MinimumLevel.Warning()
+                    .WriteTo.Console()
+                    .CreateLogger();
+            }
+            else if (verbose)
             {
                 Log.Logger = new LoggerConfiguration()
                     .MinimumLevel.Verbose()
                     .WriteTo.File("asa.log.txt")
-                    .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Verbose)
+                    .WriteTo.Console()
                     .CreateLogger();
             }
             else if (debug)
@@ -35,11 +48,20 @@ namespace AttackSurfaceAnalyzer.Utils
             else
             {
                 Log.Logger = new LoggerConfiguration()
-                        .MinimumLevel.Debug()
-                        .WriteTo.File("asa.log.txt")
-                        .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
-                        .CreateLogger();
+                   .MinimumLevel.Information()
+                   .WriteTo.Console(restrictedToMinimumLevel: LogEventLevel.Information)
+                   .CreateLogger();
             }
+        }
+
+        public static void DebugException(Exception e)
+        {
+            Log.Debug("{0} {1} {2}", e.GetType().ToString(), e.Message, e.StackTrace);
+        }
+
+        public static void VerboseException(Exception e)
+        {
+            Log.Verbose("{0} {1} {2}", e.GetType().ToString(), e.Message, e.StackTrace);
         }
     }
 }

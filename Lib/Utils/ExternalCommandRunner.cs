@@ -4,10 +4,10 @@ using System.Diagnostics;
 
 namespace AttackSurfaceAnalyzer.Utils
 {
-    class ExternalCommandRunner
+    public static class ExternalCommandRunner
     {
 
-        public string RunExternalCommand(string command, params string[] args)
+        public static string RunExternalCommand(string command, params string[] args)
         {
             var process = new Process()
             {
@@ -21,6 +21,7 @@ namespace AttackSurfaceAnalyzer.Utils
                     CreateNoWindow = true
                 }
             };
+            Serilog.Log.Verbose("Running external command {0} {1}", command, Newtonsoft.Json.JsonConvert.SerializeObject(args));
             process.Start();
             string result = process.StandardOutput.ReadToEnd();
             process.WaitForExit();

@@ -1,14 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+using AttackSurfaceAnalyzer.Types;
+using AttackSurfaceAnalyzer.Utils;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using AttackSurfaceAnalyzer.ObjectTypes;
-using AttackSurfaceAnalyzer.Utils;
-using Serilog;
 
 namespace AttackSurfaceAnalyzer.Collectors
 {
+    /// <summary>
+    /// Base class for all collectors.
+    /// </summary>
     public abstract class BaseCollector : PlatformRunnable
     {
         public string runId = null;
@@ -33,7 +36,7 @@ namespace AttackSurfaceAnalyzer.Collectors
             _running = RUN_STATUS.RUNNING;
             watch = System.Diagnostics.Stopwatch.StartNew();
 
-            Log.Information("{0} {1}.",Strings.Get("Starting"), this.GetType().Name);
+            Log.Information(Strings.Get("Starting"), this.GetType().Name);
         }
 
         public void Stop()
@@ -57,11 +60,6 @@ namespace AttackSurfaceAnalyzer.Collectors
         public int NumCollected()
         {
             return _numCollected;
-        }
-
-        public BaseCollector()
-        {
-            
         }
     }
 }

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Diagnostics;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.ApplicationInsights;
+﻿using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Data.Sqlite;
-using Microsoft.ApplicationInsights.DataContracts;
+using System;
+using System.Collections.Generic;
 
 namespace AttackSurfaceAnalyzer.Utils
 {
@@ -17,25 +15,34 @@ namespace AttackSurfaceAnalyzer.Utils
 
         public static TelemetryClient Client;
 
+        public static void TestMode()
+        {
+            Client = new TelemetryClient();
+            TelemetryConfiguration.Active.DisableTelemetry = true;
+        }
+
         public static void Setup(bool Gui)
         {
-            using (var cmd = new SqliteCommand(CHECK_TELEMETRY, DatabaseManager.Connection))
+            if (Client == null)
             {
-                using (var reader = cmd.ExecuteReader())
+                using (var cmd = new SqliteCommand(CHECK_TELEMETRY, DatabaseManager.Connection, DatabaseManager.Transaction))
                 {
-                    while (reader.Read())
+                    using (var reader = cmd.ExecuteReader())
                     {
-                        TelemetryConfiguration.Active.DisableTelemetry = bool.Parse(reader["value"].ToString());
+                        while (reader.Read())
+                        {
+                            TelemetryConfiguration.Active.DisableTelemetry = bool.Parse(reader["value"].ToString());
+                        }
                     }
                 }
+                TelemetryConfiguration.Active.InstrumentationKey = "719e5a56-dae8-425f-be07-877db7ae4d3b";
+                Client = new TelemetryClient();
+                Client.Context.Component.Version = Helpers.GetVersionString();
+                // Force some values to static values to prevent gathering unneeded data
+                Client.Context.Cloud.RoleInstance = (Gui) ? "GUI" : "CLI";
+                Client.Context.Cloud.RoleName = (Gui) ? "GUI" : "CLI";
+                Client.Context.Location.Ip = "1.1.1.1";
             }
-            TelemetryConfiguration.Active.InstrumentationKey = "719e5a56-dae8-425f-be07-877db7ae4d3b";
-            Client =  new TelemetryClient();
-            Client.Context.Component.Version = Helpers.GetVersionString();
-            // Force some values to static values to prevent gathering unneeded data
-            Client.Context.Cloud.RoleInstance = (Gui) ? "GUI" : "CLI";
-            Client.Context.Cloud.RoleName = (Gui) ? "GUI" : "CLI";
-            Client.Context.Location.Ip = "1.1.1.1";
         }
 
         public static void Flush()
@@ -54,7 +61,7 @@ namespace AttackSurfaceAnalyzer.Utils
             }
         }
 
-        public static void TrackEvent(string name, Dictionary<string,string> evt)
+        public static void TrackEvent(string name, Dictionary<string, string> evt)
         {
             evt.Add("Version", Helpers.GetVersionString());
             evt.Add("OS", Helpers.GetOsName());

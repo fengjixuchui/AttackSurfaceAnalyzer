@@ -1,10 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Reflection;
-using AttackSurfaceAnalyzer.ObjectTypes;
+using AttackSurfaceAnalyzer.Types;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace AttackSurfaceAnalyzer.Utils
 {
@@ -26,6 +27,11 @@ namespace AttackSurfaceAnalyzer.Utils
             }
         }
 
+        public static bool IsAdmin()
+        {
+            return Elevation.IsAdministrator() || Elevation.IsRunningAsRoot();
+        }
+
         public static string MakeValidFileName(string name)
         {
             string invalidChars = System.Text.RegularExpressions.Regex.Escape(new string(System.IO.Path.GetInvalidFileNameChars()));
@@ -41,21 +47,22 @@ namespace AttackSurfaceAnalyzer.Utils
             return fileVersionInfo.ProductVersion;
         }
 
-        public static string RuntimeString()
+
+        public static string GetPlatformString()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                return "Linux";
+                return PLATFORM.LINUX.ToString();
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return "Windows";
+                return PLATFORM.WINDOWS.ToString();
             }
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                return "Macos";
+                return PLATFORM.MACOS.ToString();
             }
-            return "Unknown";
+            return PLATFORM.UNKNOWN.ToString();
         }
 
         public static string ResultTypeToTableName(RESULT_TYPE result_type)
@@ -70,7 +77,7 @@ namespace AttackSurfaceAnalyzer.Utils
                     return "registry";
                 case RESULT_TYPE.CERTIFICATE:
                     return "certificates";
-                case RESULT_TYPE.SERVICES:
+                case RESULT_TYPE.SERVICE:
                     return "win_system_service";
                 case RESULT_TYPE.USER:
                     return "user_account";
@@ -87,8 +94,7 @@ namespace AttackSurfaceAnalyzer.Utils
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                ExternalCommandRunner runner = new ExternalCommandRunner();
-                return runner.RunExternalCommand("uname", "-r");
+                return ExternalCommandRunner.RunExternalCommand("uname", "-r");
             }
             return "";
         }
@@ -97,25 +103,45 @@ namespace AttackSurfaceAnalyzer.Utils
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return Helpers.RuntimeString();
+                return Helpers.GetPlatformString();
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                ExternalCommandRunner runner = new ExternalCommandRunner();
-                return runner.RunExternalCommand("uname", "-s");
+                return ExternalCommandRunner.RunExternalCommand("uname", "-s");
             }
             return "";
         }
 
-        public static Dictionary<string,string> GenerateMetadata()
+        public static Dictionary<string, string> GenerateMetadata()
         {
             var dict = new Dictionary<string, string>();
 
-            dict["version"] = GetVersionString();
-            dict["os"] = GetOsName();
-            dict["osversion"] = GetOsVersion();
+            dict["compare-version"] = GetVersionString();
+            dict["compare-os"] = GetOsName();
+            dict["compare-osversion"] = GetOsVersion();
 
             return dict;
+        }
+
+        public static string RunIdsToCompareId(string firstRunId, string secondRunId)
+        {
+            return string.Format("{0} & {1}", firstRunId, secondRunId);
+        }
+
+        public static bool IsList(object o)
+        {
+            if (o == null) return false;
+            return o is IList &&
+                   o.GetType().IsGenericType &&
+                   o.GetType().GetGenericTypeDefinition().IsAssignableFrom(typeof(List<>));
+        }
+
+        public static bool IsDictionary(object o)
+        {
+            if (o == null) return false;
+            return o is IDictionary &&
+                   o.GetType().IsGenericType &&
+                   o.GetType().GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>));
         }
     }
 }

@@ -1,41 +1,38 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-using System;
+using AttackSurfaceAnalyzer.Types;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Management.Automation;
-using System.Runtime.InteropServices;
-using System.Text;
-using AttackSurfaceAnalyzer.Utils;
-using Newtonsoft.Json;
-using Serilog;
-using AttackSurfaceAnalyzer.Libs;
 
-
-namespace AttackSurfaceAnalyzer.ObjectTypes
+namespace AttackSurfaceAnalyzer.Objects
 {
-    public class FileSystemObject
+    public class FileSystemObject : CollectObject
     {
 
-        public string Path;
-        public string Permissions;
-        public ulong Size;
-        public string ContentHash;
+        public string Path { get; set; }
+        public string Permissions { get; set; }
+        public ulong Size { get; set; }
+        public string ContentHash { get; set; }
         public List<DLLCHARACTERISTICS> Characteristics;
-        public string SignatureStatus;
+        public string SignatureStatus { get; set; }
+        public bool IsExecutable { get; set; }
+        public bool IsDirectory { get; set; }
 
-        public string RowKey
+        public string Owner { get; set; }
+        public string Group { get; set; }
+        public bool SetGid { get; set; }
+        public bool SetUid { get; set; }
+
+        public FileSystemObject()
+        {
+            ResultType = RESULT_TYPE.FILE;
+        }
+
+        public override string Identity
         {
             get
             {
-                return CryptoHelpers.CreateHash(this.ToString());
+                return Path;
             }
-        }
-
-        public override string ToString()
-        {
-            return string.Format("Path={0}, Permission={1}, Size={2}, ContentHash={3}", Path, Permissions, Size, ContentHash);
         }
     }
 }

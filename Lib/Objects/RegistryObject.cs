@@ -1,28 +1,41 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+using AttackSurfaceAnalyzer.Types;
+using Microsoft.Win32;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Security.AccessControl;
-using AttackSurfaceAnalyzer.Utils;
-using Microsoft.Win32;
-using Serilog;
 
-namespace AttackSurfaceAnalyzer.ObjectTypes
+namespace AttackSurfaceAnalyzer.Objects
 {
-    public class RegistryObject
+    public class RegistryObject : CollectObject
     {
 
-        public string Key = "";
+        public string Key;
         public Dictionary<string, string> Values = new Dictionary<string, string>();
         public List<string> Subkeys = new List<string>();
-        public string Permissions = "";
+        public string Permissions;
+        public int ValueCount
+        {
+            get { return Values.Count; }
+        }
+        public int SubkeyCount
+        {
+            get { return Subkeys.Count; }
+        }
+
+        public RegistryObject()
+        {
+            ResultType = RESULT_TYPE.REGISTRY;
+        }
 
         private static List<string> GetSubkeys(RegistryKey key)
         {
             return new List<string>(key.GetSubKeyNames());
         }
 
-                private static Dictionary<string, string> GetValues(RegistryKey key)
+        private static Dictionary<string, string> GetValues(RegistryKey key)
         {
             Dictionary<string, string> values = new Dictionary<string, string>();
             // Write values under key and commit
@@ -67,20 +80,27 @@ namespace AttackSurfaceAnalyzer.ObjectTypes
         public RegistryObject(RegistryKey Key)
         {
             this.Key = Key.Name;
-            this.Values = GetValues(Key);
-            this.Subkeys = GetSubkeys(Key);
-            this.Permissions = "";
+            ResultType = RESULT_TYPE.REGISTRY;
+            Values = GetValues(Key);
+            Subkeys = GetSubkeys(Key);
+            Permissions = "";
+
             try
             {
                 Permissions = Key.GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.All);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                Log.Debug(e.GetType() + " failed to get security descriptor for " + Key.Name);
+                Log.Debug(e, "Failed to get security descriptor for " + Key.Name);
             }
         }
 
-        public RegistryObject()
-        { }
+        public override string Identity
+        {
+            get
+            {
+                return this.Key;
+            }
+        }
     }
 }

@@ -1,24 +1,28 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-namespace AttackSurfaceAnalyzer.ObjectTypes
+namespace AttackSurfaceAnalyzer.Types
 {
-    public enum RESULT_TYPE {
+    public enum RESULT_TYPE
+    {
+        UNKNOWN,
         FILE,
         PORT,
         REGISTRY,
         CERTIFICATE,
-        SERVICES,
+        SERVICE,
         USER,
-        UNKNOWN
+        GROUP,
+        FIREWALL,
+        COM
     };
 
-     public enum CHANGE_TYPE
+    public enum CHANGE_TYPE
     {
+        INVALID,
         CREATED,
         DELETED,
         MODIFIED,
-        RENAMED,
-        INVALID
+        RENAMED
     }
 
     public enum RUN_STATUS
@@ -34,7 +38,9 @@ namespace AttackSurfaceAnalyzer.ObjectTypes
     {
         NONE,
         UNIQUE_ID,
-        INVALID_PATH
+        INVALID_PATH,
+        ALREADY_RUNNING,
+        NO_COLLECTORS
     }
 
     public enum DLLCHARACTERISTICS
@@ -50,5 +56,39 @@ namespace AttackSurfaceAnalyzer.ObjectTypes
         IMAGE_DLLCHARACTERISTICS_WDM_DRIVER = 0x2000,
         IMAGE_DLLCHARACTERISTICS_GUARD_CF = 0x4000,
         IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE = 0x8000
+    }
+
+    // These need better names. But the heirarchy of these makes sense to me as a model.
+    // These are flags that can be defined in an analyze.json to arrange output by importance.
+    public enum ANALYSIS_RESULT_TYPE
+    {
+        NONE,
+        VERBOSE,
+        DEBUG,
+        INFORMATION,
+        WARNING,
+        ERROR,
+        FATAL
+    }
+
+    public enum OPERATION
+    {
+        REGEX,
+        EQ,
+        NEQ,
+        LT,
+        GT,
+        CONTAINS,
+        WAS_MODIFIED,
+        ENDS_WITH,
+        STARTS_WITH
+    }
+
+    public enum PLATFORM
+    {
+        WINDOWS,
+        LINUX,
+        MACOS,
+        UNKNOWN
     }
 }

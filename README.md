@@ -1,8 +1,15 @@
-﻿# Attack Surface Analyzer 
+# Attack Surface Analyzer 
 
-## Version 2.1
+## Getting Attack Surface Analyzer
+Attack Surface Analyzer is distributed via our GitHub [releases](https://github.com/Microsoft/AttackSurfaceAnalyzer/releases/latest) page.  
+- `AsaCli` builds include only the command-line interface. 
+- `AsaGui` builds include only a graphical user interface available either via your own browser (`AsaGui-slim-*` packages) or via an integrated Electron application (`AsaGui-Win10-*`) 
 
-Attack Surface Analyzer was first released for the general audience starting in version 2.0 (see [Release\v2.0](https://github.com/Microsoft/AttackSurfaceAnalyzer/tree/release/v2.0)).  The master branch tracks continuing development and is innapropriate for production use. To obtain the latest official release, click [here](https://github.com/Microsoft/AttackSurfaceAnalyzer/releases/latest).
+The database format is compatible between the Cli and Gui versions.
+
+## Note on Version
+The latest released version of Attack Surface Analyzer is 2.0 (see [Release\v2.0](https://github.com/Microsoft/AttackSurfaceAnalyzer/tree/release/v2.0)).  
+You are currently viewing the master branch, which tracks continuing development and is not recommended for production use.
 
 ## Overview
 
@@ -10,7 +17,7 @@ Attack Surface Analyzer is a Microsoft-developed open source security tool that 
 surface of a target system and reports on potential security vulnerabilities introduced during
 the installation of software or system misconfiguration. 
 
-Attack Surface Analyzer 2.0 replaces the original [Attack Surface Analzyer](https://www.microsoft.com/en-us/download/details.aspx?id=24487) tool, released publicly in 2012.
+Attack Surface Analyzer 2.0 replaces the original [Attack Surface Analyzer](https://www.microsoft.com/en-us/download/details.aspx?id=24487) tool, released publicly in 2012.
 
 Potential users of Attack Surface Analyzer include:
 
@@ -36,17 +43,26 @@ All data collected is stored in a local SQLite database called `asa.sqlite`.
 
 ## How to Use Attack Surface Analyzer
 
-Information on how to use Attack Surface Analyzer can be found on our
+Run the following commands in an Administrator Shell (or as root)
+
+### CLI Mode
+To start a default all collectors run: ```asa.exe collect```
+
+To compare the last two collection runs: ```asa.exe export-collect```
+
+For other commands run: ```asa.exe --help```
+
+### GUI Mode
+For the GUI interface run: ```asa.exe gui``` and a browser window should open directed at ```http://localhost:5000``` with the web based interface.
+
+Detailed information on how to use Attack Surface Analyzer can be found on our
 [wiki](https://github.com/Microsoft/AttackSurfaceAnalyzer/wiki).
 
 ## Future Plans (tentative)
 
 We plan on adding additional features to Attack Surface Analyzer, including those from the list below: 
 
-- Code signing info
-- Drivers (partially covered presently via file system monitoring)
-- Firewall settings
-- Redistributable installations
+- Extended Driver details
 - Network traffic (live monitoring)
 - Registry (live monitoring)
 - Requested features which existed in the original Attack Surface Analyzer.
@@ -56,7 +72,7 @@ If you have feedback on these or other features, please
 
 ## Installation
 
-Attack Surface Analzyer runs on Windows, Linux, and MacOS, and is built using [.NET Core](https://dotnet.microsoft.com/). It has both a command-line interface and [ElectronNET](https://github.com/ElectronNET/Electron.NET) GUI option available. Neither version currently has an installer.
+Attack Surface Analyzer runs on Windows, Linux, and MacOS, and is built using [.NET Core](https://dotnet.microsoft.com/).
 
 Packages are available on our [releases](https://github.com/Microsoft/AttackSurfaceAnalyzer/releases) page as compressed archives.
 

@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
+using Serilog;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using Serilog;
 
 /*********************************** Module Header ***********************************\
  Module Name:  MainForm.cs
@@ -436,20 +436,33 @@ namespace AttackSurfaceAnalyzer.Utils
 
         }
 
-        // Does this cover sudo?
         public static bool IsRunningAsRoot()
         {
-            var runner = new ExternalCommandRunner();
-            var username = runner.RunExternalCommand("whoami");
-            return username != null ? username.Contains("root") : false;
+            var username = "notroot";
+            try
+            {
+                username = ExternalCommandRunner.RunExternalCommand("whoami");
+            }
+            catch (Exception)
+            {
+                Log.Fatal("Couldn't run 'whoami' to determine root.");
+            }
+            return username != null ? username.Trim().Equals("root") : false;
         }
-        
+
         public static bool IsAdministrator()
         {
-            using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+            try
             {
-                WindowsPrincipal principal = new WindowsPrincipal(identity);
-                return principal.IsInRole(WindowsBuiltInRole.Administrator);
+                using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
+                {
+                    WindowsPrincipal principal = new WindowsPrincipal(identity);
+                    return principal.IsInRole(WindowsBuiltInRole.Administrator);
+                }
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
             }
         }
     }

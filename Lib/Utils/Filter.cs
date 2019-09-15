@@ -1,18 +1,21 @@
-﻿using Newtonsoft.Json;
+﻿using AttackSurfaceAnalyzer.Objects;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using Serilog;
-using System.Reflection;
 
 namespace AttackSurfaceAnalyzer.Utils
 {
     public static class Filter
     {
         static JObject config = null;
-        static Dictionary<string, List<Regex>> _filters = new Dictionary<string, List<Regex>>();
+        static Dictionary<string, List<Regex>> _filters = new Dictionary<string, List<Regex>>() {
+            { "Certificates:Scan:File:Path:Include",new List<Regex>(){ new Regex("^.*\\.cer$") } },
+            { "Certificates:Scan:File:Path:Exclude",new List<Regex>(){ new Regex(".*") } }
+        };
 
         public static bool IsFiltered(string Platform, string ScanType, string ItemType, string Property, string Target)
         {
@@ -38,7 +41,7 @@ namespace AttackSurfaceAnalyzer.Utils
             }
             try
             {
-                string key = String.Format("{0}{1}{2}{3}{4}", Platform, ScanType, ItemType, Property, FilterType);
+                string key = String.Format("{0}:{1}:{2}:{3}:{4}", Platform, ScanType, ItemType, Property, FilterType);
                 List<Regex> filters = new List<Regex>();
 
                 try
@@ -58,7 +61,7 @@ namespace AttackSurfaceAnalyzer.Utils
                             }
                             catch (Exception e)
                             {
-                                Log.Debug(e.GetType().ToString());
+                                Logger.DebugException(e);
                                 Log.Debug("Failed to make a regex from {0}", filter.ToString());
                                 Telemetry.TrackTrace(Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error, e);
                             }
@@ -72,22 +75,22 @@ namespace AttackSurfaceAnalyzer.Utils
                             // We are running in parallel, its possible someone added it in between the original check and now. No problem here.
                             filters = _filters[key];
                         }
-                        Log.Information("{0} {1} {2} {3} {4} {5}", Strings.Get("SuccessParsed"), Platform, ScanType, ItemType, Property, FilterType);
+                        Log.Debug(Strings.Get("SuccessParsed"), Platform, ScanType, ItemType, Property, FilterType);
                     }
                     catch (NullReferenceException)
                     {
                         try
                         {
                             _filters.Add(key, new List<Regex>());
-                            Log.Debug("{0} {1} {2} {3} {4} {5}", Strings.Get("FailedParsed"), Platform, ScanType, ItemType, Property, FilterType);
+                            Log.Debug(Strings.Get("FailedParsed"), Platform, ScanType, ItemType, Property, FilterType);
                         }
                         catch (ArgumentException)
                         {
                             // We are running in parallel, its possible someone added it in between the original check and now. No problem here.
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
-                            Log.Debug("{0}:{1}",e.GetType().ToString(),e.Message);
+                            Logger.DebugException(e);
                             Log.Debug(e.StackTrace);
                         }
 
@@ -99,7 +102,7 @@ namespace AttackSurfaceAnalyzer.Utils
                         try
                         {
                             _filters.Add(key, new List<Regex>());
-                            Log.Information("{0} {1} {2} {3} {4} {5}", Strings.Get("Err_FiltersFile"), Platform, ScanType, ItemType, Property, FilterType);
+                            Log.Information(Strings.Get("Err_FiltersFile"), Platform, ScanType, ItemType, Property, FilterType);
                         }
                         catch (ArgumentException)
                         {
@@ -107,7 +110,7 @@ namespace AttackSurfaceAnalyzer.Utils
                         }
                         catch (Exception e)
                         {
-                            Log.Debug("{0}:{1}", e.GetType().ToString(), e.Message);
+                            Logger.DebugException(e);
                             Log.Debug(e.StackTrace);
                         }
                         return false;
@@ -116,9 +119,7 @@ namespace AttackSurfaceAnalyzer.Utils
                 }
                 catch (Exception e)
                 {
-                    Log.Debug(e.GetType().ToString());
-                    Log.Debug(e.Message);
-                    Log.Debug(e.StackTrace);
+                    Logger.DebugException(e);
                     Telemetry.TrackTrace(Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error, e);
                 }
 
@@ -136,7 +137,7 @@ namespace AttackSurfaceAnalyzer.Utils
                     catch (Exception e)
                     {
                         Log.Debug("Probably this is some of those garbled keys or a bad regex");
-                        Log.Debug(e.GetType().ToString());
+                        Logger.DebugException(e);
                         Log.Debug(filter.ToString());
                         Telemetry.TrackTrace(Microsoft.ApplicationInsights.DataContracts.SeverityLevel.Error, e);
                     }
@@ -146,9 +147,7 @@ namespace AttackSurfaceAnalyzer.Utils
             catch (NullReferenceException e)
             {
                 Log.Debug("No Filter Entry {0}, {1}, {2}, {3}, {4}", Platform, ScanType, ItemType, Property, FilterType);
-                Log.Debug(e.Message);
-                Log.Debug(e.Source);
-                Log.Debug(e.StackTrace);
+                Logger.DebugException(e);
             }
 
             return false;
@@ -167,7 +166,7 @@ namespace AttackSurfaceAnalyzer.Utils
         {
             try
             {
-                var assembly = Assembly.GetExecutingAssembly();
+                var assembly = typeof(FileSystemObject).Assembly;
                 var resourceName = "AttackSurfaceAnalyzer.filters.json";
 
                 using (Stream stream = assembly.GetManifestResourceStream(resourceName))
@@ -175,7 +174,7 @@ namespace AttackSurfaceAnalyzer.Utils
                 using (JsonTextReader reader = new JsonTextReader(streamreader))
                 {
                     config = (JObject)JToken.ReadFrom(reader);
-                    Log.Information("{0} {1}", Strings.Get("LoadedFilters"), "Embedded");
+                    Log.Information(Strings.Get("LoadedFilters"), "Embedded");
                     DumpFilters();
                 }
                 if (config == null)
@@ -185,7 +184,6 @@ namespace AttackSurfaceAnalyzer.Utils
             }
             catch (FileNotFoundException)
             {
-                //That's fine, we just don't have any filters to load
                 config = null;
                 Log.Debug("{0} is missing (filter configuration file)", "Embedded");
 
@@ -197,7 +195,18 @@ namespace AttackSurfaceAnalyzer.Utils
                 Log.Debug("{0} is missing (filter configuration file)", "Embedded");
 
                 return;
+            }
+            catch (ArgumentNullException)
+            {
+                config = null;
+                Log.Debug("{0} is missing (filter configuration file)", "Embedded");
+            }
+            catch (Exception e)
+            {
+                config = null;
+                Log.Warning("Could not load filters {0} {1}", "Embedded", e.GetType().ToString());
 
+                return;
             }
         }
 
@@ -209,7 +218,7 @@ namespace AttackSurfaceAnalyzer.Utils
                 using (JsonTextReader reader = new JsonTextReader(file))
                 {
                     config = (JObject)JToken.ReadFrom(reader);
-                    Log.Information("{0} {1}",Strings.Get("LoadedFilters"), filterLoc);
+                    Log.Information(Strings.Get("LoadedFilters"), filterLoc);
                     DumpFilters();
                 }
                 if (config == null)
@@ -221,20 +230,25 @@ namespace AttackSurfaceAnalyzer.Utils
             {
                 //That's fine, we just don't have any filters to load
                 config = null;
-                Log.Debug("{0} is missing (filter configuration file)", filterLoc);
+                Log.Warning("{0} is missing (filter configuration file)", filterLoc);
 
                 return;
             }
             catch (NullReferenceException)
             {
                 config = null;
-                Log.Debug("{0} is missing (filter configuration file)", filterLoc);
+                Log.Warning("{0} is missing (filter configuration file)", filterLoc);
 
                 return;
-
+            }
+            catch (Exception e)
+            {
+                config = null;
+                Log.Warning("Could not load filters {0} {1}", filterLoc, e.GetType().ToString());
+                return;
             }
 
         }
-        
+
     }
 }

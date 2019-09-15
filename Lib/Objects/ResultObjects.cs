@@ -1,12 +1,26 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
-using AttackSurfaceAnalyzer.Collectors.FileSystem;
-using AttackSurfaceAnalyzer.ObjectTypes;
-using Serilog;
+using AttackSurfaceAnalyzer.Types;
+using System.Collections.Generic;
 using System.IO;
 
-namespace AttackSurfaceAnalyzer.ObjectTypes
+namespace AttackSurfaceAnalyzer.Objects
 {
+
+    public class RawCollectResult
+    {
+        public RESULT_TYPE ResultType;
+        public string RowKey;
+        public string RunId;
+        public string Identity;
+        public string Serialized;
+    }
+
+    public class RawModifiedResult
+    {
+        public RawCollectResult First;
+        public RawCollectResult Second;
+    }
 
     public class FileMonitorEvent
     {
@@ -19,12 +33,30 @@ namespace AttackSurfaceAnalyzer.ObjectTypes
 
     public class CompareResult
     {
+        public string Identity;
+        public CHANGE_TYPE ChangeType;
+        public RESULT_TYPE ResultType;
+        public ANALYSIS_RESULT_TYPE Analysis;
+        public List<Rule> Rules = new List<Rule>();
+        public List<Diff> Diffs = new List<Diff>();
+
         public string BaseRowKey;
         public string CompareRowKey;
         public string BaseRunId;
         public string CompareRunId;
-        public CHANGE_TYPE ChangeType;
-        public RESULT_TYPE ResultType;
+        public object Base;
+        public object Compare;
+
+        public bool ShouldSerializeDiffs()
+        {
+            return (Diffs.Count > 0);
+        }
+
+        public bool ShouldSerializeRules()
+        {
+            return (Rules.Count > 0);
+        }
+
     }
 
     public class OutputFileMonitorResult
@@ -44,36 +76,30 @@ namespace AttackSurfaceAnalyzer.ObjectTypes
         public string SerializedCompare;
     }
 
-    public class FileSystemResult : CompareResult
-    {
-        public FileSystemObject Base;
-        public FileSystemObject Compare;
-        public FileSystemResult()
-        {
-            ResultType = RESULT_TYPE.FILE;
-        }
-    }
-
     public class FileSystemMonitorResult
     {
         public FileSystemEventArgs evt;
         public NotifyFilters filter;
     }
 
-    public class OpenPortResult: CompareResult
+    public class FileSystemResult : CompareResult
     {
-        public OpenPortObject Base;
-        public OpenPortObject Compare;
+        public FileSystemResult()
+        {
+            ResultType = RESULT_TYPE.FILE;
+        }
+    }
+
+    public class OpenPortResult : CompareResult
+    {
         public OpenPortResult()
         {
             ResultType = RESULT_TYPE.PORT;
         }
     }
 
-    public class RegistryResult: CompareResult
+    public class RegistryResult : CompareResult
     {
-        public RegistryObject Base;
-        public RegistryObject Compare;
         public RegistryResult()
         {
             ResultType = RESULT_TYPE.REGISTRY;
@@ -82,28 +108,22 @@ namespace AttackSurfaceAnalyzer.ObjectTypes
 
     public class ServiceResult : CompareResult
     {
-        public ServiceObject Base;
-        public ServiceObject Compare;
         public ServiceResult()
         {
-            ResultType = RESULT_TYPE.SERVICES;
+            ResultType = RESULT_TYPE.SERVICE;
         }
     }
 
     public class UserAccountResult : CompareResult
     {
-        public UserAccountObject Base;
-        public UserAccountObject Compare;
         public UserAccountResult()
         {
             ResultType = RESULT_TYPE.USER;
         }
     }
 
-    public class CertificateResult: CompareResult
+    public class CertificateResult : CompareResult
     {
-        public CertificateObject Base;
-        public CertificateObject Compare;
         public CertificateResult()
         {
             ResultType = RESULT_TYPE.CERTIFICATE;
